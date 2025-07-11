@@ -22,21 +22,6 @@ Each subset serves as a test stratum to compare how consistently a given NER mod
 
 ---
 
-## 📂 Project Structure
-
-```bash
-
-jeopardyNER/
-├── data/               # Original dataset
-├── scripts/            # Filtering + estimation scripts
-├── subsets/            # Final JSONL outputs (3 x 1000)
-├── requirement.txt     # installation requirements
-└── README.md
-```
-
-
----
-
 ## 💻 Installation
 
 ```bash
@@ -50,6 +35,56 @@ pip install -r requirements.txt
 python -m spacy download en_core_web_sm
 ```
 
+
+---
+
+## 🧩 Curation Process Overview
+
+The curation pipeline is designed to extract three controlled subsets of Jeopardy questions to evaluate NER model performance under specific linguistic conditions. The overall process works as follows:
+
+1. **Load the full dataset** (~217,000 entries) from `JEOPARDY_QUESTIONS1.json`.
+2. **Pass 1**: For each data point, analyze the `question` (and occasionally the `answer`) field to detect one of the following patterns:
+   - Numeric content (e.g., years, amounts)
+   - Non-English phrases
+   - Named entities that are rare across the dataset
+3. **Use heuristics or lightweight NLP tools** (e.g., regex, language detection, entity frequency) to filter relevant items.
+4. **Collect 1000 matching entries per category**, stopping early for efficiency once the count is met.
+5. **Output results** in newline-delimited JSON (`.jsonl`) for easy downstream use.
+
+Each subset is mutually independent and uniformly sized, enabling fair model evaluation and performance comparison across different types of language challenges.
+
+---
+## 🛠️ Helper Functions
+
+The core logic uses a few small helper functions across scripts:
+
+- `contains_number(text)`  
+  Uses regular expressions to detect numeric content such as years (`\b\d+(\.\d+)?\b`). Applied to both questions and answers.
+
+- `is_non_english(text)`  
+  Uses `langid` to detect the language of a string. Returns `True` if not English (`'en'`). Handles short phrases robustly.
+
+- `entity_counter[text]`  
+  Built using `spaCy` to count frequency of named entities (`PERSON`, `ORG`, `GPE`) across the full dataset. Used to identify rare entities below a defined threshold.
+
+---
+## 📦 Third-Party Libraries Used
+
+This project uses a few carefully selected open-source tools to assist with lightweight NLP processing and iteration:
+
+- [`spaCy`](https://spacy.io)  
+  An industrial-strength NLP library used here to perform Named Entity Recognition (NER). It provides a fast and efficient `en_core_web_sm` English model for identifying entity types like `PERSON`, `ORG`, and `GPE`.
+
+- [`langid`](https://github.com/saffsd/langid.py)  
+  A compact and offline language identification library. It works well with short texts like Jeopardy questions and does not require external models or internet access.
+
+- [`tqdm`](https://tqdm.github.io)  
+  A simple Python library for displaying progress bars during data iteration. Improves script feedback and runtime visibility, especially when processing ~200k entries.
+
+- `re` (Python standard library)  
+  Used for pattern-based text filtering (e.g., finding numeric tokens) via regular expressions.
+
+All third-party tools were selected for their speed, interpretability, and low external dependencies.
 
 ---
 
@@ -97,23 +132,6 @@ Each file contains 1000 examples in JSON Lines format.
 I ran a scan over the entire dataset to estimate how common each challenge type is, here's my result:
 
 <img width="700" height="118" alt="Screenshot 2025-07-10 at 23 46 40" src="https://github.com/user-attachments/assets/11f7146a-4269-4e75-a142-1aca457cafe5" />
-
-
-
-
----
-
-## ⚙️ Scripts
-
-| Script | Description |
-|--------|-------------|
-| `filter_numbers.py` | Extracts examples containing numeric phrases using regex |
-| `filter_non_english.py` | Filters non-English examples using `langid` |
-| `filter_rare_proper_nouns.py` | Uses `spaCy` to identify rare entities from `PERSON`, `ORG`, `GPE` |
-| `estimate_category_counts.py` | Scans full dataset and prints estimated counts for each category |
-
-All outputs are saved to the `subsets/` folder.
-
 
 
 ---
