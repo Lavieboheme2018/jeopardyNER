@@ -2,7 +2,7 @@
 
 This project extracts specific subsets from a large Jeopardy question dataset (about 217k entries). The goal is to create small, focused test sets that help us evaluate how well Named Entity Recognition (NER) models handle different types of language.
 
-
+Project Presentation 🔗 https://youtu.be/VMKOpp-5_O0 
 
 ---
 
